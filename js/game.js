@@ -76,6 +76,13 @@ function shuffle(items) {
 }
 
 function generateQuestionSet() {
+  if (!Number.isInteger(QUESTIONS_PER_LEVEL)) {
+    console.warn(`題庫設定不整除：${QUESTIONS_PER_RUN} 題無法平均分配到 ${LEVEL_ENEMIES.length} 關，已改用固定題序。`);
+    return [...QUESTIONS]
+      .sort((a, b) => a.level - b.level || a.id - b.id)
+      .slice(0, QUESTIONS_PER_RUN);
+  }
+
   const missingLevel = LEVEL_ENEMIES.find((enemy) => QUESTIONS_BY_LEVEL[enemy.level].length < QUESTIONS_PER_LEVEL);
   if (missingLevel) {
     console.warn(`題庫設定不足：第 ${missingLevel.level} 關少於 ${QUESTIONS_PER_LEVEL} 題，已改用固定題序補齊。`);
