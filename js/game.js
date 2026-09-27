@@ -5,6 +5,10 @@ import { exportPdfReport } from "./pdf-export.js";
 
 const STORAGE_KEY = "historyRpgProgressV1";
 const HISTORY_KEY = "historyRpgReportsV1";
+const QUESTIONS_PER_LEVEL = 3;
+const QUESTION_MAP = new Map(QUESTIONS.map((item) => [item.id, item]));
+const LEVELS = LEVEL_ENEMIES.map((item) => item.level);
+const LEGACY_QUESTION_IDS = Array.from({ length: 15 }, (_, index) => index + 1);
 
 const elements = {
   intro: document.getElementById("intro"),
@@ -43,6 +47,7 @@ let latestReport = null;
 
 function createInitialState() {
   return {
+    questionIds: [],
     currentQuestionIndex: 0,
     playerHp: 120,
     enemyHp: LEVEL_ENEMIES[0].maxHp,
@@ -56,6 +61,95 @@ function createInitialState() {
       cautious: 0
     }
   };
+}
+
+function sampleWithoutReplacement(items, count) {
+  const pool = [...items];
+  for (let i = pool.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+  return pool.slice(0, count);
+}
+
+function buildQuestionIdsForRun() {
+  return LEVELS.flatMap((level) => {
+    const levelQuestions = QUESTIONS.filter((item) => item.level === level);
+    if (levelQuestions.length < QUESTIONS_PER_LEVEL) {
+      throw new Error(`題庫設定錯誤：第 ${level} 關題數不足 ${QUESTIONS_PER_LEVEL} 題。`);
+    }
+    return sampleWithoutReplacement(levelQuestions, QUESTIONS_PER_LEVEL).map((item) => item.id);
+  });
+}
+
+function hasExpectedLevelDistribution(questionIds) {
+  if (!Array.isArray(questionIds)) {
+    return false;
+  }
+
+  const totalNeeded = LEVELS.length * QUESTIONS_PER_LEVEL;
+  if (questionIds.length !== totalNeeded || new Set(questionIds).size !== questionIds.length) {
+    return false;
+  }
+
+  if (!questionIds.every((id) => QUESTION_MAP.has(id))) {
+    return false;
+  }
+
+  const counts = questionIds.reduce((acc, id) => {
+    const level = QUESTION_MAP.get(id).level;
+    acc[level] = (acc[level] || 0) + 1;
+    return acc;
+  }, {});
+
+  return LEVELS.every((level) => (counts[level] || 0) === QUESTIONS_PER_LEVEL);
+}
+
+function repairQuestionIds(sourceIds = []) {
+  const selectedByLevel = Object.fromEntries(LEVELS.map((level) => [level, []]));
+  const seen = new Set();
+
+  sourceIds.forEach((id) => {
+    if (seen.has(id) || !QUESTION_MAP.has(id)) {
+      return;
+    }
+    const level = QUESTION_MAP.get(id).level;
+    if (selectedByLevel[level].length < QUESTIONS_PER_LEVEL) {
+      selectedByLevel[level].push(id);
+      seen.add(id);
+    }
+  });
+
+  LEVELS.forEach((level) => {
+    const levelQuestions = QUESTIONS.filter((item) => item.level === level);
+    if (levelQuestions.length < QUESTIONS_PER_LEVEL) {
+      throw new Error(`題庫設定錯誤：第 ${level} 關題數不足 ${QUESTIONS_PER_LEVEL} 題。`);
+    }
+    sampleWithoutReplacement(levelQuestions, levelQuestions.length).forEach((item) => {
+      if (selectedByLevel[level].length < QUESTIONS_PER_LEVEL && !seen.has(item.id)) {
+        selectedByLevel[level].push(item.id);
+        seen.add(item.id);
+      }
+    });
+  });
+
+  const repairedIds = LEVELS.flatMap((level) => selectedByLevel[level]);
+  if (!hasExpectedLevelDistribution(repairedIds)) {
+    throw new Error("題庫修復失敗：無法重建每關 3 題的有效題組。");
+  }
+  return repairedIds;
+}
+
+function getRunQuestions() {
+  if (!state.questionIds.length) {
+    return [];
+  }
+
+  return state.questionIds.map((id) => QUESTION_MAP.get(id)).filter(Boolean);
+}
+
+function getQuestionByIndex(index) {
+  return getRunQuestions()[index];
 }
 
 function getEnemyByLevel(level) {
@@ -84,14 +178,15 @@ function logBattle(text, isGood = true) {
 
 function renderStatus() {
   const enemy = getEnemyByLevel(state.currentLevel);
+  const totalQuestions = state.questionIds.length || LEVELS.length * QUESTIONS_PER_LEVEL;
   elements.playerHp.textContent = `${Math.max(state.playerHp, 0)} / 120`;
   elements.enemyName.textContent = `第 ${state.currentLevel} 關・${enemy.name}`;
   elements.enemyHp.textContent = `${Math.max(state.enemyHp, 0)} / ${enemy.maxHp}`;
-  elements.progress.textContent = `${state.currentQuestionIndex + 1} / ${QUESTIONS.length}`;
+  elements.progress.textContent = `${state.currentQuestionIndex + 1} / ${totalQuestions}`;
 }
 
 function renderQuestion() {
-  const question = QUESTIONS[state.currentQuestionIndex];
+  const question = getQuestionByIndex(state.currentQuestionIndex);
   if (!question) {
     finishGame();
     return;
@@ -130,7 +225,7 @@ function pushReport(report) {
 }
 
 function handleAnswer(answerKey) {
-  const question = QUESTIONS[state.currentQuestionIndex];
+  const question = getQuestionByIndex(state.currentQuestionIndex);
   if (!question) {
     return;
   }
@@ -186,7 +281,7 @@ function handleAnswer(answerKey) {
   const currentLevel = question.level;
   state.currentQuestionIndex += 1;
 
-  const nextQuestion = QUESTIONS[state.currentQuestionIndex];
+  const nextQuestion = getQuestionByIndex(state.currentQuestionIndex);
   if (state.enemyHp <= 0 && nextQuestion && nextQuestion.level === currentLevel) {
     state.enemyHp = 0;
   } else if (nextQuestion && nextQuestion.level !== currentLevel) {
@@ -205,7 +300,7 @@ function handleAnswer(answerKey) {
 function buildFinalReport() {
   const summary = summarizeResult({ answers: state.answers, wrongQuestions: state.wrongQuestions });
   const knowledgeStats = buildKnowledgeStats(state.answers);
-  const recommendations = buildRecommendations(knowledgeStats);
+  const recommendations = buildRecommendations(knowledgeStats, state.wrongQuestions);
   const ending = decideEnding({
     accuracy: summary.accuracy,
     playerHp: state.playerHp,
@@ -281,6 +376,7 @@ function renderAnalysis(report) {
 
 function startNewGame() {
   state = createInitialState();
+  state.questionIds = buildQuestionIdsForRun();
   elements.battleLog.innerHTML = "";
   elements.storyText.textContent = getLevelOpening(1);
   saveProgress();
@@ -306,10 +402,35 @@ function resumeGame() {
       }
     };
 
+    const hasValidQuestionIds = hasExpectedLevelDistribution(state.questionIds);
+
+    if (!hasValidQuestionIds) {
+      if (!Array.isArray(state.questionIds) || !state.questionIds.length) {
+        const answeredIds = (state.answers || [])
+          .map((item) => item.id)
+          .filter((id, index, array) => QUESTION_MAP.has(id) && array.indexOf(id) === index);
+        state.questionIds = repairQuestionIds(answeredIds.length ? answeredIds : LEGACY_QUESTION_IDS);
+      } else {
+        state.questionIds = repairQuestionIds(state.questionIds);
+      }
+    }
+    if (state.questionIds.length) {
+      const totalQuestions = state.questionIds.length;
+      if (state.currentQuestionIndex >= totalQuestions) {
+        state.currentQuestionIndex = totalQuestions;
+      } else {
+        state.currentQuestionIndex = Math.min(Math.max(state.currentQuestionIndex, 0), totalQuestions - 1);
+      }
+    } else {
+      state.currentQuestionIndex = 0;
+    }
+
     elements.battleLog.innerHTML = "";
-    const currentLevel = QUESTIONS[state.currentQuestionIndex]?.level || state.currentLevel || 1;
+    const currentQuestion = getQuestionByIndex(state.currentQuestionIndex);
+    const currentLevel = currentQuestion?.level || state.currentLevel || 1;
     state.currentLevel = currentLevel;
     elements.storyText.textContent = getLevelOpening(currentLevel);
+    saveProgress();
     renderQuestion();
     showPanel("game");
   } catch {

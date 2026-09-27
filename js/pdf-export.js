@@ -1,13 +1,16 @@
 export function exportPdfReport(report) {
-  if (!window.jspdf?.jsPDF) {
+  if (!window.jspdf?.jsPDF || !window.html2canvas) {
     alert("PDF 套件尚未載入，請稍後再試。");
     return;
   }
 
-  const doc = new window.jspdf.jsPDF();
+  const doc = new window.jspdf.jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
   const container = document.createElement("section");
-  container.style.width = "700px";
-  container.style.padding = "12px";
+  container.style.width = "760px";
+  container.style.padding = "16px";
+  container.style.position = "fixed";
+  container.style.left = "-99999px";
+  container.style.top = "0";
   container.style.fontFamily = "\"Noto Sans TC\", \"Microsoft JhengHei\", sans-serif";
   container.style.fontSize = "12px";
   container.style.color = "#111827";
@@ -58,19 +61,57 @@ export function exportPdfReport(report) {
   container.appendChild(recommendationList);
 
   document.body.appendChild(container);
-  try {
-    doc.html(container, {
-      x: 10,
-      y: 10,
-      width: 190,
-      windowWidth: 760,
-      callback: (pdf) => {
-        pdf.save("history-rpg-learning-report.pdf");
-        container.remove();
+  window.html2canvas(container, { scale: 2, useCORS: true, backgroundColor: "#ffffff" })
+    .then((canvas) => {
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const margin = 10;
+      const renderWidth = pageWidth - margin * 2;
+      const printablePageHeight = pageHeight - margin * 2;
+      const pxPerPdfUnit = canvas.width / renderWidth;
+      const sliceHeightPx = Math.max(1, Math.floor(printablePageHeight * pxPerPdfUnit));
+      let offsetY = 0;
+      let pageIndex = 0;
+
+      while (offsetY < canvas.height) {
+        const pageCanvas = document.createElement("canvas");
+        pageCanvas.width = canvas.width;
+        pageCanvas.height = Math.min(sliceHeightPx, canvas.height - offsetY);
+        const context = pageCanvas.getContext("2d");
+        if (!context) {
+          throw new Error("Canvas context unavailable");
+        }
+
+        context.drawImage(
+          canvas,
+          0,
+          offsetY,
+          canvas.width,
+          pageCanvas.height,
+          0,
+          0,
+          canvas.width,
+          pageCanvas.height
+        );
+
+        if (pageIndex > 0) {
+          doc.addPage();
+        }
+
+        const imageData = pageCanvas.toDataURL("image/png");
+        const renderHeight = (pageCanvas.height * renderWidth) / pageCanvas.width;
+        doc.addImage(imageData, "PNG", margin, margin, renderWidth, renderHeight);
+
+        offsetY += sliceHeightPx;
+        pageIndex += 1;
       }
+
+      doc.save("history-rpg-learning-report.pdf");
+    })
+    .catch(() => {
+      alert("PDF 產生失敗，請稍後再試。");
+    })
+    .finally(() => {
+      container.remove();
     });
-  } catch {
-    container.remove();
-    alert("PDF 產生失敗，請稍後再試。");
-  }
 }
