@@ -184,8 +184,8 @@ function handleAnswer(answerKey) {
 
   const nextQuestion = QUESTIONS[state.currentQuestionIndex];
   if (state.enemyHp <= 0 && nextQuestion && nextQuestion.level === currentLevel) {
-    state.enemyHp = getEnemyByLevel(currentLevel).maxHp;
-    logBattle("你擊破了敵方前鋒，新的敵軍補位上場！", true);
+    state.enemyHp = 0;
+    logBattle("你已擊破本關敵將，剩餘題目將決定最終評價。", true);
   } else if (nextQuestion && nextQuestion.level !== currentLevel) {
     state.currentLevel = nextQuestion.level;
     state.enemyHp = getEnemyByLevel(state.currentLevel).maxHp;
@@ -324,6 +324,7 @@ function bindEvents() {
   elements.backResult.addEventListener("click", () => showPanel("result"));
   elements.restartGame.addEventListener("click", () => {
     state = createInitialState();
+    clearProgress();
     updateIntroState();
     showPanel("intro");
   });
