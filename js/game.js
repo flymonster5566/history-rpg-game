@@ -111,7 +111,7 @@ function generateQuestionSet() {
     return buildDeterministicFallbackSet();
   }
 
-  const missingLevel = LEVEL_ENEMIES.find((enemy) => QUESTIONS_BY_LEVEL[enemy.level].length < QUESTIONS_PER_LEVEL);
+  const missingLevel = LEVEL_ENEMIES.find((enemy) => (QUESTIONS_BY_LEVEL[enemy.level] || []).length < QUESTIONS_PER_LEVEL);
   if (missingLevel) {
     console.warn(`題庫設定不足：第 ${missingLevel.level} 關少於 ${QUESTIONS_PER_LEVEL} 題，已改用固定題序補齊。`);
     return buildDeterministicFallbackSet();
@@ -126,9 +126,7 @@ function getCurrentQuestions() {
       return mapped;
     }
   }
-  const fallback = generateQuestionSet();
-  state.questionSet = fallback.map((item) => item.id);
-  return fallback;
+  return buildDeterministicFallbackSet();
 }
 
 function getEnemyByLevel(level) {

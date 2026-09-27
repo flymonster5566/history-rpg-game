@@ -62,8 +62,14 @@ export async function exportPdfReport(report) {
   document.body.appendChild(container);
 
   try {
+    const deviceScale = window.devicePixelRatio || 1;
+    const rawPixels = container.scrollWidth * container.scrollHeight;
+    const maxPixels = 16_000_000;
+    const maxScaleByPixels = rawPixels ? Math.sqrt(maxPixels / rawPixels) : 1;
+    const renderScale = Math.max(1, Math.min(2, deviceScale, maxScaleByPixels));
+
     const canvas = await window.html2canvas(container, {
-      scale: 2,
+      scale: renderScale,
       useCORS: true,
       backgroundColor: "#ffffff"
     });
