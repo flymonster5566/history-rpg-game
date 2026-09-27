@@ -116,6 +116,7 @@ function generateQuestionSet() {
     console.warn(`題庫設定不足：第 ${missingLevel.level} 關少於 ${QUESTIONS_PER_LEVEL} 題，已改用固定題序補齊。`);
     return buildDeterministicFallbackSet();
   }
+  // 維持原本章節推進節奏：依關卡順序抽題，每關隨機 3 題。
   return LEVEL_ENEMIES.flatMap((enemy) => shuffle(QUESTIONS_BY_LEVEL[enemy.level]).slice(0, QUESTIONS_PER_LEVEL));
 }
 

@@ -66,7 +66,7 @@ export async function exportPdfReport(report) {
     const rawPixels = container.scrollWidth * container.scrollHeight;
     const maxPixels = 16_000_000;
     const maxScaleByPixels = rawPixels ? Math.sqrt(maxPixels / rawPixels) : 1;
-    const renderScale = Math.max(1, Math.min(2, deviceScale, maxScaleByPixels));
+    const renderScale = Math.max(0.25, Math.min(2, deviceScale, maxScaleByPixels));
 
     const canvas = await window.html2canvas(container, {
       scale: renderScale,
