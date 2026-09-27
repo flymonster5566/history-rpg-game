@@ -189,7 +189,6 @@ function handleAnswer(answerKey) {
   const nextQuestion = QUESTIONS[state.currentQuestionIndex];
   if (state.enemyHp <= 0 && nextQuestion && nextQuestion.level === currentLevel) {
     state.enemyHp = 0;
-    logBattle("你已擊破本關敵將，剩餘題目將決定最終評價。", true);
   } else if (nextQuestion && nextQuestion.level !== currentLevel) {
     state.currentLevel = nextQuestion.level;
     state.enemyHp = getEnemyByLevel(state.currentLevel).maxHp;
@@ -310,9 +309,7 @@ function resumeGame() {
     elements.battleLog.innerHTML = "";
     const currentLevel = QUESTIONS[state.currentQuestionIndex]?.level || state.currentLevel || 1;
     state.currentLevel = currentLevel;
-    if (state.currentQuestionIndex === 0) {
-      elements.storyText.textContent = getLevelOpening(1);
-    }
+    elements.storyText.textContent = getLevelOpening(currentLevel);
     renderQuestion();
     showPanel("game");
   } catch {

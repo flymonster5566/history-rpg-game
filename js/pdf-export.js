@@ -58,7 +58,7 @@ export function exportPdfReport(report) {
   container.appendChild(recommendationList);
 
   document.body.appendChild(container);
-  Promise.resolve(
+  try {
     doc.html(container, {
       x: 10,
       y: 10,
@@ -66,13 +66,11 @@ export function exportPdfReport(report) {
       windowWidth: 760,
       callback: (pdf) => {
         pdf.save("history-rpg-learning-report.pdf");
+        container.remove();
       }
-    })
-  )
-    .catch(() => {
-      alert("PDF 產生失敗，請稍後再試。");
-    })
-    .finally(() => {
-      container.remove();
     });
+  } catch {
+    container.remove();
+    alert("PDF 產生失敗，請稍後再試。");
+  }
 }

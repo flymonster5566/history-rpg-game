@@ -27,6 +27,13 @@ const WRONG_LINES = {
   cautious: "你猶豫片刻，敵方率先發動重擊。"
 };
 
+const PERFECT_ENDING_STYLE = {
+  brave: "果敢",
+  wise: "睿智",
+  balanced: "均衡",
+  cautious: "審慎"
+};
+
 export function getLevelOpening(level) {
   return PERIOD_OPENING[level] || "新的歷史場景展開。";
 }
@@ -58,7 +65,7 @@ export function decideEnding({ accuracy, playerHp, branchScore }) {
     return {
       key: "perfect",
       title: "完美結局：史官傳承者",
-      description: `你以高正確率通關，並展現${dominant === "wise" ? "睿智" : "沉著"}決策，成功守護歷史真相。`
+      description: `你以高正確率通關，並展現${PERFECT_ENDING_STYLE[dominant] || "沉著"}決策，成功守護歷史真相。`
     };
   }
 

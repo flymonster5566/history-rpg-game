@@ -82,7 +82,7 @@ body {
   cursor: pointer;
 }
 
-.option-btn:hover { border-color: var(--primary); }
+.option-btn:not(:disabled):hover { border-color: var(--primary); }
 .option-btn:focus-visible {
   outline: 2px solid var(--primary);
   outline-offset: 2px;
