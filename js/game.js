@@ -8,6 +8,7 @@ const HISTORY_KEY = "historyRpgReportsV1";
 const QUESTIONS_PER_LEVEL = 3;
 const QUESTION_MAP = new Map(QUESTIONS.map((item) => [item.id, item]));
 const LEVELS = LEVEL_ENEMIES.map((item) => item.level);
+const LEGACY_QUESTION_IDS = Array.from({ length: 15 }, (_, index) => index + 1);
 
 const elements = {
   intro: document.getElementById("intro"),
@@ -74,8 +75,69 @@ function sampleWithoutReplacement(items, count) {
 function buildQuestionIdsForRun() {
   return LEVELS.flatMap((level) => {
     const levelQuestions = QUESTIONS.filter((item) => item.level === level);
+    if (levelQuestions.length < QUESTIONS_PER_LEVEL) {
+      throw new Error(`題庫設定錯誤：第 ${level} 關題數不足 ${QUESTIONS_PER_LEVEL} 題。`);
+    }
     return sampleWithoutReplacement(levelQuestions, QUESTIONS_PER_LEVEL).map((item) => item.id);
   });
+}
+
+function hasExpectedLevelDistribution(questionIds) {
+  if (!Array.isArray(questionIds)) {
+    return false;
+  }
+
+  const totalNeeded = LEVELS.length * QUESTIONS_PER_LEVEL;
+  if (questionIds.length !== totalNeeded || new Set(questionIds).size !== questionIds.length) {
+    return false;
+  }
+
+  if (!questionIds.every((id) => QUESTION_MAP.has(id))) {
+    return false;
+  }
+
+  const counts = questionIds.reduce((acc, id) => {
+    const level = QUESTION_MAP.get(id).level;
+    acc[level] = (acc[level] || 0) + 1;
+    return acc;
+  }, {});
+
+  return LEVELS.every((level) => (counts[level] || 0) === QUESTIONS_PER_LEVEL);
+}
+
+function repairQuestionIds(sourceIds = []) {
+  const selectedByLevel = Object.fromEntries(LEVELS.map((level) => [level, []]));
+  const seen = new Set();
+
+  sourceIds.forEach((id) => {
+    if (seen.has(id) || !QUESTION_MAP.has(id)) {
+      return;
+    }
+    const level = QUESTION_MAP.get(id).level;
+    if (selectedByLevel[level].length < QUESTIONS_PER_LEVEL) {
+      selectedByLevel[level].push(id);
+      seen.add(id);
+    }
+  });
+
+  LEVELS.forEach((level) => {
+    const levelQuestions = QUESTIONS.filter((item) => item.level === level);
+    if (levelQuestions.length < QUESTIONS_PER_LEVEL) {
+      throw new Error(`題庫設定錯誤：第 ${level} 關題數不足 ${QUESTIONS_PER_LEVEL} 題。`);
+    }
+    sampleWithoutReplacement(levelQuestions, levelQuestions.length).forEach((item) => {
+      if (selectedByLevel[level].length < QUESTIONS_PER_LEVEL && !seen.has(item.id)) {
+        selectedByLevel[level].push(item.id);
+        seen.add(item.id);
+      }
+    });
+  });
+
+  const repairedIds = LEVELS.flatMap((level) => selectedByLevel[level]);
+  if (!hasExpectedLevelDistribution(repairedIds)) {
+    throw new Error("題庫修復失敗：無法重建每關 3 題的有效題組。");
+  }
+  return repairedIds;
 }
 
 function getRunQuestions() {
@@ -340,16 +402,27 @@ function resumeGame() {
       }
     };
 
-    const hasValidQuestionIds = Array.isArray(state.questionIds)
-      && state.questionIds.length === LEVELS.length * QUESTIONS_PER_LEVEL
-      && new Set(state.questionIds).size === state.questionIds.length
-      && state.questionIds.every((id) => QUESTION_MAP.has(id));
+    const hasValidQuestionIds = hasExpectedLevelDistribution(state.questionIds);
 
     if (!hasValidQuestionIds) {
-      const answeredIds = [...new Set((state.answers || []).map((item) => item.id).filter((id) => QUESTION_MAP.has(id)))];
-      const generatedIds = buildQuestionIdsForRun().filter((id) => !answeredIds.includes(id));
-      const totalNeeded = LEVELS.length * QUESTIONS_PER_LEVEL;
-      state.questionIds = [...answeredIds, ...generatedIds].slice(0, totalNeeded);
+      if (!Array.isArray(state.questionIds) || !state.questionIds.length) {
+        const answeredIds = (state.answers || [])
+          .map((item) => item.id)
+          .filter((id, index, array) => QUESTION_MAP.has(id) && array.indexOf(id) === index);
+        state.questionIds = repairQuestionIds(answeredIds.length ? answeredIds : LEGACY_QUESTION_IDS);
+      } else {
+        state.questionIds = repairQuestionIds(state.questionIds);
+      }
+    }
+    if (state.questionIds.length) {
+      const totalQuestions = state.questionIds.length;
+      if (state.currentQuestionIndex >= totalQuestions) {
+        state.currentQuestionIndex = totalQuestions;
+      } else {
+        state.currentQuestionIndex = Math.min(Math.max(state.currentQuestionIndex, 0), totalQuestions - 1);
+      }
+    } else {
+      state.currentQuestionIndex = 0;
     }
 
     elements.battleLog.innerHTML = "";

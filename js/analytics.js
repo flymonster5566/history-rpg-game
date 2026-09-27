@@ -24,6 +24,7 @@ const PERIOD_DATE_RANGES = {
   "清代時期": "1644年～1912年",
   "綜合知識": "秦至清（西元前221年～1912年）"
 };
+const PERIOD_ORDER = ["秦漢時期", "唐宋時期", "元明時期", "清代時期", "綜合知識"];
 
 function buildCategoryAction(category, value) {
   const drills = Math.max(4, value.wrong * 2);
@@ -58,7 +59,12 @@ export function buildRecommendations(knowledgeStats, wrongQuestions = []) {
     acc[key] = (acc[key] || 0) + 1;
     return acc;
   }, {});
-  const weakestPeriod = Object.entries(periodWrongCounts).sort((a, b) => b[1] - a[1])[0];
+  const weakestPeriod = Object.entries(periodWrongCounts).sort((a, b) => {
+    if (b[1] !== a[1]) {
+      return b[1] - a[1];
+    }
+    return PERIOD_ORDER.indexOf(a[0]) - PERIOD_ORDER.indexOf(b[0]);
+  })[0];
 
   const recommendations = [];
   if (weakestPeriod) {

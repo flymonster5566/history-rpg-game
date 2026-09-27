@@ -4,7 +4,7 @@ export function exportPdfReport(report) {
     return;
   }
 
-  const doc = new window.jspdf.jsPDF();
+  const doc = new window.jspdf.jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
   const container = document.createElement("section");
   container.style.width = "760px";
   container.style.padding = "16px";
@@ -63,23 +63,47 @@ export function exportPdfReport(report) {
   document.body.appendChild(container);
   window.html2canvas(container, { scale: 2, useCORS: true, backgroundColor: "#ffffff" })
     .then((canvas) => {
-      const imageData = canvas.toDataURL("image/png");
       const pageWidth = doc.internal.pageSize.getWidth();
       const pageHeight = doc.internal.pageSize.getHeight();
       const margin = 10;
       const renderWidth = pageWidth - margin * 2;
-      const renderHeight = (canvas.height * renderWidth) / canvas.width;
-      let remainingHeight = renderHeight;
-      let positionY = margin;
+      const printablePageHeight = pageHeight - margin * 2;
+      const pxPerPdfUnit = canvas.width / renderWidth;
+      const sliceHeightPx = Math.max(1, Math.floor(printablePageHeight * pxPerPdfUnit));
+      let offsetY = 0;
+      let pageIndex = 0;
 
-      doc.addImage(imageData, "PNG", margin, positionY, renderWidth, renderHeight);
-      remainingHeight -= pageHeight - margin * 2;
+      while (offsetY < canvas.height) {
+        const pageCanvas = document.createElement("canvas");
+        pageCanvas.width = canvas.width;
+        pageCanvas.height = Math.min(sliceHeightPx, canvas.height - offsetY);
+        const context = pageCanvas.getContext("2d");
+        if (!context) {
+          throw new Error("Canvas context unavailable");
+        }
 
-      while (remainingHeight > 0) {
-        positionY = margin - (renderHeight - remainingHeight);
-        doc.addPage();
-        doc.addImage(imageData, "PNG", margin, positionY, renderWidth, renderHeight);
-        remainingHeight -= pageHeight - margin * 2;
+        context.drawImage(
+          canvas,
+          0,
+          offsetY,
+          canvas.width,
+          pageCanvas.height,
+          0,
+          0,
+          canvas.width,
+          pageCanvas.height
+        );
+
+        if (pageIndex > 0) {
+          doc.addPage();
+        }
+
+        const imageData = pageCanvas.toDataURL("image/png");
+        const renderHeight = (pageCanvas.height * renderWidth) / pageCanvas.width;
+        doc.addImage(imageData, "PNG", margin, margin, renderWidth, renderHeight);
+
+        offsetY += sliceHeightPx;
+        pageIndex += 1;
       }
 
       doc.save("history-rpg-learning-report.pdf");
