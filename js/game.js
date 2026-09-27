@@ -75,20 +75,46 @@ function shuffle(items) {
   return list;
 }
 
+function buildDeterministicFallbackSet() {
+  const basePerLevel = Math.floor(QUESTIONS_PER_RUN / LEVEL_ENEMIES.length);
+  const selected = [];
+  const selectedIds = new Set();
+
+  LEVEL_ENEMIES.forEach((enemy) => {
+    const candidates = [...(QUESTIONS_BY_LEVEL[enemy.level] || [])].sort((a, b) => a.id - b.id);
+    candidates.slice(0, basePerLevel).forEach((question) => {
+      selected.push(question);
+      selectedIds.add(question.id);
+    });
+  });
+
+  if (selected.length < QUESTIONS_PER_RUN) {
+    [...QUESTIONS]
+      .sort((a, b) => a.level - b.level || a.id - b.id)
+      .forEach((question) => {
+        if (selected.length >= QUESTIONS_PER_RUN || selectedIds.has(question.id)) {
+          return;
+        }
+        selected.push(question);
+        selectedIds.add(question.id);
+      });
+  }
+
+  return selected
+    .slice(0, QUESTIONS_PER_RUN)
+    .sort((a, b) => a.level - b.level || a.id - b.id);
+}
+
 function generateQuestionSet() {
   if (!Number.isInteger(QUESTIONS_PER_LEVEL)) {
     console.warn(`題庫設定不整除：${QUESTIONS_PER_RUN} 題無法平均分配到 ${LEVEL_ENEMIES.length} 關，已改用固定題序。`);
-    return [...QUESTIONS]
-      .sort((a, b) => a.level - b.level || a.id - b.id)
-      .slice(0, QUESTIONS_PER_RUN);
+    return buildDeterministicFallbackSet();
   }
 
   const missingLevel = LEVEL_ENEMIES.find((enemy) => QUESTIONS_BY_LEVEL[enemy.level].length < QUESTIONS_PER_LEVEL);
   if (missingLevel) {
     console.warn(`題庫設定不足：第 ${missingLevel.level} 關少於 ${QUESTIONS_PER_LEVEL} 題，已改用固定題序補齊。`);
-    return [...QUESTIONS]
-      .sort((a, b) => a.level - b.level || a.id - b.id)
-      .slice(0, QUESTIONS_PER_RUN);
+    return buildDeterministicFallbackSet();
   }
   return LEVEL_ENEMIES.flatMap((enemy) => shuffle(QUESTIONS_BY_LEVEL[enemy.level]).slice(0, QUESTIONS_PER_LEVEL));
 }
