@@ -6,13 +6,14 @@ export function exportPdfReport(report) {
 
   const doc = new window.jspdf.jsPDF();
   let y = 15;
+  const toAscii = (text) => String(text).replace(/[^\x00-\x7F]/g, " ").replace(/\s+/g, " ").trim();
 
   const addLine = (text) => {
     if (y > 280) {
       doc.addPage();
       y = 15;
     }
-    doc.text(text, 12, y);
+    doc.text(toAscii(text), 12, y);
     y += 8;
   };
 
@@ -32,7 +33,7 @@ export function exportPdfReport(report) {
     addLine("- None");
   } else {
     report.wrongQuestions.forEach((item, index) => {
-      addLine(`${index + 1}. ${item.text}`);
+      addLine(`${index + 1}. Q${item.id} (${item.period}/${item.category})`);
       addLine(`   Correct: ${item.answer} | Your Answer: ${item.userAnswer}`);
     });
   }

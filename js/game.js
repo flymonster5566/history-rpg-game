@@ -175,7 +175,6 @@ function handleAnswer(answerKey) {
   }
 
   if (state.playerHp <= 0) {
-    saveProgress();
     finishGame();
     return;
   }
@@ -184,7 +183,10 @@ function handleAnswer(answerKey) {
   state.currentQuestionIndex += 1;
 
   const nextQuestion = QUESTIONS[state.currentQuestionIndex];
-  if (nextQuestion && nextQuestion.level !== currentLevel) {
+  if (state.enemyHp <= 0 && nextQuestion && nextQuestion.level === currentLevel) {
+    state.enemyHp = getEnemyByLevel(currentLevel).maxHp;
+    logBattle("你擊破了敵方前鋒，新的敵軍補位上場！", true);
+  } else if (nextQuestion && nextQuestion.level !== currentLevel) {
     state.currentLevel = nextQuestion.level;
     state.enemyHp = getEnemyByLevel(state.currentLevel).maxHp;
     elements.storyText.textContent = getLevelOpening(state.currentLevel);
