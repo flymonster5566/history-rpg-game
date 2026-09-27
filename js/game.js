@@ -343,7 +343,7 @@ function resumeGame() {
 
     elements.battleLog.innerHTML = "";
     if (!Array.isArray(state.questionSet) || state.questionSet.length !== QUESTIONS_PER_RUN) {
-      state.questionSet = QUESTIONS.slice(0, QUESTIONS_PER_RUN).map((item) => item.id);
+      state.questionSet = generateQuestionSet().map((item) => item.id);
     }
     const currentLevel = getCurrentQuestions()[state.currentQuestionIndex]?.level || state.currentLevel || 1;
     state.currentLevel = currentLevel;
