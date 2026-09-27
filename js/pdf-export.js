@@ -67,25 +67,49 @@ export async function exportPdfReport(report) {
       useCORS: true,
       backgroundColor: "#ffffff"
     });
-    const imgData = canvas.toDataURL("image/png");
     const pdf = new window.jspdf.jsPDF("p", "mm", "a4");
     const pageWidth = pdf.internal.pageSize.getWidth();
     const pageHeight = pdf.internal.pageSize.getHeight();
     const margin = 10;
     const imgWidth = pageWidth - margin * 2;
-    const imgHeight = (canvas.height * imgWidth) / canvas.width;
     const usableHeight = pageHeight - margin * 2;
+    const pageHeightPx = Math.floor((usableHeight * canvas.width) / imgWidth);
+    let renderedHeightPx = 0;
+    let pageIndex = 0;
 
-    let heightLeft = imgHeight;
-    let offsetY = margin;
-    pdf.addImage(imgData, "PNG", margin, offsetY, imgWidth, imgHeight);
-    heightLeft -= usableHeight;
+    while (renderedHeightPx < canvas.height) {
+      const sliceHeightPx = Math.min(pageHeightPx, canvas.height - renderedHeightPx);
+      const pageCanvas = document.createElement("canvas");
+      pageCanvas.width = canvas.width;
+      pageCanvas.height = sliceHeightPx;
+      const pageContext = pageCanvas.getContext("2d");
 
-    while (heightLeft > 0) {
-      pdf.addPage();
-      offsetY = margin - (imgHeight - heightLeft);
-      pdf.addImage(imgData, "PNG", margin, offsetY, imgWidth, imgHeight);
-      heightLeft -= usableHeight;
+      if (!pageContext) {
+        throw new Error("無法建立 PDF 畫布。");
+      }
+
+      pageContext.drawImage(
+        canvas,
+        0,
+        renderedHeightPx,
+        canvas.width,
+        sliceHeightPx,
+        0,
+        0,
+        canvas.width,
+        sliceHeightPx
+      );
+
+      if (pageIndex > 0) {
+        pdf.addPage();
+      }
+
+      const pageImgData = pageCanvas.toDataURL("image/png");
+      const pageImgHeight = (sliceHeightPx * imgWidth) / canvas.width;
+      pdf.addImage(pageImgData, "PNG", margin, margin, imgWidth, pageImgHeight);
+
+      renderedHeightPx += sliceHeightPx;
+      pageIndex += 1;
     }
 
     pdf.save("history-rpg-learning-report.pdf");

@@ -76,14 +76,26 @@ function shuffle(items) {
 }
 
 function generateQuestionSet() {
+  const missingLevel = LEVEL_ENEMIES.find((enemy) => QUESTIONS_BY_LEVEL[enemy.level].length < QUESTIONS_PER_LEVEL);
+  if (missingLevel) {
+    console.warn(`題庫設定不足：第 ${missingLevel.level} 關少於 ${QUESTIONS_PER_LEVEL} 題，已改用固定題序補齊。`);
+    return [...QUESTIONS]
+      .sort((a, b) => a.level - b.level || a.id - b.id)
+      .slice(0, QUESTIONS_PER_RUN);
+  }
   return LEVEL_ENEMIES.flatMap((enemy) => shuffle(QUESTIONS_BY_LEVEL[enemy.level]).slice(0, QUESTIONS_PER_LEVEL));
 }
 
 function getCurrentQuestions() {
-  if (Array.isArray(state.questionSet) && state.questionSet.length === QUESTIONS_PER_RUN) {
-    return state.questionSet.map((id) => QUESTION_MAP.get(id)).filter(Boolean);
+  if (Array.isArray(state.questionSet)) {
+    const mapped = state.questionSet.map((id) => QUESTION_MAP.get(id)).filter(Boolean);
+    if (mapped.length === QUESTIONS_PER_RUN) {
+      return mapped;
+    }
   }
-  return QUESTIONS.slice(0, QUESTIONS_PER_RUN);
+  const fallback = generateQuestionSet();
+  state.questionSet = fallback.map((item) => item.id);
+  return fallback;
 }
 
 function getEnemyByLevel(level) {
