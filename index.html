@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>中國古代史 RPG 試煉</title>
+  <link rel="stylesheet" href="./css/style.css" />
+</head>
+<body>
+  <main class="container">
+    <section id="intro" class="panel active">
+      <h1>中國古代史 RPG 試煉</h1>
+      <p>你是一名時間旅者，必須穿越五個歷史時期，透過答題擊敗守關者，改寫歷史命運。</p>
+      <div class="actions">
+        <button id="start-game" class="primary">開始冒險</button>
+        <button id="resume-game" class="secondary">繼續上次進度</button>
+      </div>
+      <p id="intro-note" class="hint"></p>
+    </section>
+
+    <section id="game" class="panel">
+      <header class="status-grid">
+        <div><strong>玩家 HP</strong><span id="player-hp"></span></div>
+        <div><strong>敵人</strong><span id="enemy-name"></span></div>
+        <div><strong>敵人 HP</strong><span id="enemy-hp"></span></div>
+        <div><strong>進度</strong><span id="progress"></span></div>
+      </header>
+
+      <article class="story-box" id="story-text"></article>
+
+      <article class="question-box">
+        <p class="meta"><span id="question-period"></span>｜<span id="question-difficulty"></span>｜<span id="question-category"></span></p>
+        <h2 id="question-text"></h2>
+        <div id="options" class="options"></div>
+      </article>
+
+      <article class="battle-log" id="battle-log"></article>
+    </section>
+
+    <section id="result" class="panel">
+      <h2>旅程結算</h2>
+      <p id="ending-title" class="ending-title"></p>
+      <p id="ending-description"></p>
+      <ul id="result-stats"></ul>
+      <div class="actions">
+        <button id="view-analysis" class="primary">查看學習分析</button>
+        <button id="restart-game" class="secondary">重新開始</button>
+      </div>
+    </section>
+
+    <section id="analysis" class="panel">
+      <h2>個人學習分析</h2>
+      <p id="analysis-score"></p>
+      <h3>知識點統計</h3>
+      <ul id="knowledge-stats"></ul>
+      <h3>錯題記錄</h3>
+      <ul id="wrong-list"></ul>
+      <h3>學習建議</h3>
+      <ul id="recommendations"></ul>
+      <div class="actions">
+        <button id="export-pdf" class="primary">下載 PDF 報告</button>
+        <button id="back-result" class="secondary">返回結算</button>
+      </div>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <script type="module" src="./js/game.js"></script>
+</body>
+</html>
