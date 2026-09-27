@@ -1,13 +1,16 @@
 export function exportPdfReport(report) {
-  if (!window.jspdf?.jsPDF) {
+  if (!window.jspdf?.jsPDF || !window.html2canvas) {
     alert("PDF 套件尚未載入，請稍後再試。");
     return;
   }
 
   const doc = new window.jspdf.jsPDF();
   const container = document.createElement("section");
-  container.style.width = "700px";
-  container.style.padding = "12px";
+  container.style.width = "760px";
+  container.style.padding = "16px";
+  container.style.position = "fixed";
+  container.style.left = "-99999px";
+  container.style.top = "0";
   container.style.fontFamily = "\"Noto Sans TC\", \"Microsoft JhengHei\", sans-serif";
   container.style.fontSize = "12px";
   container.style.color = "#111827";
@@ -58,19 +61,33 @@ export function exportPdfReport(report) {
   container.appendChild(recommendationList);
 
   document.body.appendChild(container);
-  try {
-    doc.html(container, {
-      x: 10,
-      y: 10,
-      width: 190,
-      windowWidth: 760,
-      callback: (pdf) => {
-        pdf.save("history-rpg-learning-report.pdf");
-        container.remove();
+  window.html2canvas(container, { scale: 2, useCORS: true, backgroundColor: "#ffffff" })
+    .then((canvas) => {
+      const imageData = canvas.toDataURL("image/png");
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const margin = 10;
+      const renderWidth = pageWidth - margin * 2;
+      const renderHeight = (canvas.height * renderWidth) / canvas.width;
+      let remainingHeight = renderHeight;
+      let positionY = margin;
+
+      doc.addImage(imageData, "PNG", margin, positionY, renderWidth, renderHeight);
+      remainingHeight -= pageHeight - margin * 2;
+
+      while (remainingHeight > 0) {
+        positionY = margin - (renderHeight - remainingHeight);
+        doc.addPage();
+        doc.addImage(imageData, "PNG", margin, positionY, renderWidth, renderHeight);
+        remainingHeight -= pageHeight - margin * 2;
       }
+
+      doc.save("history-rpg-learning-report.pdf");
+    })
+    .catch(() => {
+      alert("PDF 產生失敗，請稍後再試。");
+    })
+    .finally(() => {
+      container.remove();
     });
-  } catch {
-    container.remove();
-    alert("PDF 產生失敗，請稍後再試。");
-  }
 }

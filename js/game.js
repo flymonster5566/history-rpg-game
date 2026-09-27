@@ -5,6 +5,9 @@ import { exportPdfReport } from "./pdf-export.js";
 
 const STORAGE_KEY = "historyRpgProgressV1";
 const HISTORY_KEY = "historyRpgReportsV1";
+const QUESTIONS_PER_LEVEL = 3;
+const QUESTION_MAP = new Map(QUESTIONS.map((item) => [item.id, item]));
+const LEVELS = LEVEL_ENEMIES.map((item) => item.level);
 
 const elements = {
   intro: document.getElementById("intro"),
@@ -43,6 +46,7 @@ let latestReport = null;
 
 function createInitialState() {
   return {
+    questionIds: [],
     currentQuestionIndex: 0,
     playerHp: 120,
     enemyHp: LEVEL_ENEMIES[0].maxHp,
@@ -56,6 +60,34 @@ function createInitialState() {
       cautious: 0
     }
   };
+}
+
+function sampleWithoutReplacement(items, count) {
+  const pool = [...items];
+  for (let i = pool.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+  return pool.slice(0, count);
+}
+
+function buildQuestionIdsForRun() {
+  return LEVELS.flatMap((level) => {
+    const levelQuestions = QUESTIONS.filter((item) => item.level === level);
+    return sampleWithoutReplacement(levelQuestions, QUESTIONS_PER_LEVEL).map((item) => item.id);
+  });
+}
+
+function getRunQuestions() {
+  if (!state.questionIds.length) {
+    return [];
+  }
+
+  return state.questionIds.map((id) => QUESTION_MAP.get(id)).filter(Boolean);
+}
+
+function getQuestionByIndex(index) {
+  return getRunQuestions()[index];
 }
 
 function getEnemyByLevel(level) {
@@ -84,14 +116,15 @@ function logBattle(text, isGood = true) {
 
 function renderStatus() {
   const enemy = getEnemyByLevel(state.currentLevel);
+  const totalQuestions = state.questionIds.length || LEVELS.length * QUESTIONS_PER_LEVEL;
   elements.playerHp.textContent = `${Math.max(state.playerHp, 0)} / 120`;
   elements.enemyName.textContent = `第 ${state.currentLevel} 關・${enemy.name}`;
   elements.enemyHp.textContent = `${Math.max(state.enemyHp, 0)} / ${enemy.maxHp}`;
-  elements.progress.textContent = `${state.currentQuestionIndex + 1} / ${QUESTIONS.length}`;
+  elements.progress.textContent = `${state.currentQuestionIndex + 1} / ${totalQuestions}`;
 }
 
 function renderQuestion() {
-  const question = QUESTIONS[state.currentQuestionIndex];
+  const question = getQuestionByIndex(state.currentQuestionIndex);
   if (!question) {
     finishGame();
     return;
@@ -130,7 +163,7 @@ function pushReport(report) {
 }
 
 function handleAnswer(answerKey) {
-  const question = QUESTIONS[state.currentQuestionIndex];
+  const question = getQuestionByIndex(state.currentQuestionIndex);
   if (!question) {
     return;
   }
@@ -186,7 +219,7 @@ function handleAnswer(answerKey) {
   const currentLevel = question.level;
   state.currentQuestionIndex += 1;
 
-  const nextQuestion = QUESTIONS[state.currentQuestionIndex];
+  const nextQuestion = getQuestionByIndex(state.currentQuestionIndex);
   if (state.enemyHp <= 0 && nextQuestion && nextQuestion.level === currentLevel) {
     state.enemyHp = 0;
   } else if (nextQuestion && nextQuestion.level !== currentLevel) {
@@ -205,7 +238,7 @@ function handleAnswer(answerKey) {
 function buildFinalReport() {
   const summary = summarizeResult({ answers: state.answers, wrongQuestions: state.wrongQuestions });
   const knowledgeStats = buildKnowledgeStats(state.answers);
-  const recommendations = buildRecommendations(knowledgeStats);
+  const recommendations = buildRecommendations(knowledgeStats, state.wrongQuestions);
   const ending = decideEnding({
     accuracy: summary.accuracy,
     playerHp: state.playerHp,
@@ -281,6 +314,7 @@ function renderAnalysis(report) {
 
 function startNewGame() {
   state = createInitialState();
+  state.questionIds = buildQuestionIdsForRun();
   elements.battleLog.innerHTML = "";
   elements.storyText.textContent = getLevelOpening(1);
   saveProgress();
@@ -306,10 +340,24 @@ function resumeGame() {
       }
     };
 
+    const hasValidQuestionIds = Array.isArray(state.questionIds)
+      && state.questionIds.length === LEVELS.length * QUESTIONS_PER_LEVEL
+      && new Set(state.questionIds).size === state.questionIds.length
+      && state.questionIds.every((id) => QUESTION_MAP.has(id));
+
+    if (!hasValidQuestionIds) {
+      const answeredIds = [...new Set((state.answers || []).map((item) => item.id).filter((id) => QUESTION_MAP.has(id)))];
+      const generatedIds = buildQuestionIdsForRun().filter((id) => !answeredIds.includes(id));
+      const totalNeeded = LEVELS.length * QUESTIONS_PER_LEVEL;
+      state.questionIds = [...answeredIds, ...generatedIds].slice(0, totalNeeded);
+    }
+
     elements.battleLog.innerHTML = "";
-    const currentLevel = QUESTIONS[state.currentQuestionIndex]?.level || state.currentLevel || 1;
+    const currentQuestion = getQuestionByIndex(state.currentQuestionIndex);
+    const currentLevel = currentQuestion?.level || state.currentLevel || 1;
     state.currentLevel = currentLevel;
     elements.storyText.textContent = getLevelOpening(currentLevel);
+    saveProgress();
     renderQuestion();
     showPanel("game");
   } catch {

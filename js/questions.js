@@ -45,6 +45,51 @@ export const QUESTIONS = [
     answer: "C"
   },
   {
+    id: 16,
+    level: 1,
+    period: "秦漢時期",
+    difficulty: "基礎",
+    category: "政治制度",
+    text: "漢代地方監察制度中，負責巡察地方官吏的是？",
+    options: {
+      A: "刺史",
+      B: "中書令",
+      C: "尚書令",
+      D: "太尉"
+    },
+    answer: "A"
+  },
+  {
+    id: 17,
+    level: 1,
+    period: "秦漢時期",
+    difficulty: "中等",
+    category: "經濟文化",
+    text: "東漢末年至魏晉南北朝人口南遷，最直接帶動哪一地區開發？",
+    options: {
+      A: "關中地區",
+      B: "江南地區",
+      C: "遼東地區",
+      D: "河西走廊"
+    },
+    answer: "B"
+  },
+  {
+    id: 18,
+    level: 1,
+    period: "秦漢時期",
+    difficulty: "困難",
+    category: "思想文化",
+    text: "西漢中後期儒學能成為官方主流，關鍵原因是？",
+    options: {
+      A: "地方豪強全面支持法家",
+      B: "朝廷將儒學納入政治與教育體系",
+      C: "佛教已成國教",
+      D: "科舉制度完全成熟"
+    },
+    answer: "B"
+  },
+  {
     id: 4,
     level: 2,
     period: "唐宋時期",
@@ -86,6 +131,51 @@ export const QUESTIONS = [
       B: "交子",
       C: "五銖錢",
       D: "貝幣"
+    },
+    answer: "B"
+  },
+  {
+    id: 19,
+    level: 2,
+    period: "唐宋時期",
+    difficulty: "基礎",
+    category: "政治制度",
+    text: "宋代為分散相權、加強皇權，常見作法是？",
+    options: {
+      A: "設立行省統一地方軍政",
+      B: "由多個機構分掌政務與軍務",
+      C: "恢復分封諸侯制度",
+      D: "廢除文官制度"
+    },
+    answer: "B"
+  },
+  {
+    id: 20,
+    level: 2,
+    period: "唐宋時期",
+    difficulty: "中等",
+    category: "對外交流",
+    text: "宋代海外貿易繁盛，中央管理海上貿易的重要機構是？",
+    options: {
+      A: "市舶司",
+      B: "都護府",
+      C: "理藩院",
+      D: "宣政院"
+    },
+    answer: "A"
+  },
+  {
+    id: 21,
+    level: 2,
+    period: "唐宋時期",
+    difficulty: "困難",
+    category: "經濟發展",
+    text: "宋代經濟重心南移後，最能反映此趨勢的是？",
+    options: {
+      A: "關中成為全國商業中心",
+      B: "江浙地區稅收比重上升",
+      C: "北方手工業全面停滯",
+      D: "草原貿易取代海運"
     },
     answer: "B"
   },
@@ -135,6 +225,51 @@ export const QUESTIONS = [
     answer: "B"
   },
   {
+    id: 22,
+    level: 3,
+    period: "元明時期",
+    difficulty: "基礎",
+    category: "政治制度",
+    text: "元朝統治者為維持政權，常見的用人特徵是？",
+    options: {
+      A: "完全平等任用各族官員",
+      B: "以民族等級區分政治待遇",
+      C: "全面恢復九品中正制",
+      D: "地方官全由科舉產生"
+    },
+    answer: "B"
+  },
+  {
+    id: 23,
+    level: 3,
+    period: "元明時期",
+    difficulty: "中等",
+    category: "對外交流",
+    text: "鄭和下西洋停止後，明代海上政策逐漸轉向何種方向？",
+    options: {
+      A: "長期擴大官方遠洋艦隊",
+      B: "逐步趨於海禁與管制",
+      C: "全面開放私人遠洋貿易",
+      D: "改由外國管理沿海港口"
+    },
+    answer: "B"
+  },
+  {
+    id: 24,
+    level: 3,
+    period: "元明時期",
+    difficulty: "困難",
+    category: "政治制度",
+    text: "明代廢丞相後，中央決策模式的主要變化是？",
+    options: {
+      A: "皇帝直接掌握六部運作",
+      B: "地方節度使權力大幅擴張",
+      C: "議會取代君主決策",
+      D: "宰相改稱內閣首輔並具同等法定權力"
+    },
+    answer: "A"
+  },
+  {
     id: 10,
     level: 4,
     period: "清代時期",
@@ -180,6 +315,51 @@ export const QUESTIONS = [
     answer: "B"
   },
   {
+    id: 25,
+    level: 4,
+    period: "清代時期",
+    difficulty: "基礎",
+    category: "邊疆治理",
+    text: "清朝管理新疆地區時，後期主要設置的地方行政單位是？",
+    options: {
+      A: "新疆省",
+      B: "嶺北行省",
+      C: "西域都護府",
+      D: "北庭都護府"
+    },
+    answer: "A"
+  },
+  {
+    id: 26,
+    level: 4,
+    period: "清代時期",
+    difficulty: "中等",
+    category: "對外政策",
+    text: "清代中期「一口通商」政策中的「一口」主要是指哪裡？",
+    options: {
+      A: "泉州",
+      B: "寧波",
+      C: "廣州",
+      D: "上海"
+    },
+    answer: "C"
+  },
+  {
+    id: 27,
+    level: 4,
+    period: "清代時期",
+    difficulty: "困難",
+    category: "政治制度",
+    text: "軍機處在清代政治中的角色，最貼近下列何者？",
+    options: {
+      A: "協調地方自治，削弱中央",
+      B: "提升皇帝處理機密政務的效率",
+      C: "使議會能監督皇權",
+      D: "取代六部成為獨立立法機關"
+    },
+    answer: "B"
+  },
+  {
     id: 13,
     level: 5,
     period: "綜合知識",
@@ -221,6 +401,51 @@ export const QUESTIONS = [
       B: "唐較開放，明清後期趨於保守",
       C: "兩者都完全封閉",
       D: "兩者皆只重視陸路貿易"
+    },
+    answer: "B"
+  },
+  {
+    id: 28,
+    level: 5,
+    period: "綜合知識",
+    difficulty: "中等",
+    category: "制度比較",
+    text: "比較秦朝郡縣制與西周分封制，下列何者正確？",
+    options: {
+      A: "兩者都強調諸侯世襲自治",
+      B: "郡縣制較有利中央直接控制地方",
+      C: "分封制由中央任免地方官",
+      D: "兩者皆不涉及地方行政管理"
+    },
+    answer: "B"
+  },
+  {
+    id: 29,
+    level: 5,
+    period: "綜合知識",
+    difficulty: "困難",
+    category: "歷史理解",
+    text: "若從「中央集權」角度觀察秦至清，下列判斷何者最合理？",
+    options: {
+      A: "制度反覆但整體趨向中央權力整合",
+      B: "地方勢力持續勝過中央",
+      C: "皇權自唐後全面衰退",
+      D: "科舉使中央無法治理地方"
+    },
+    answer: "A"
+  },
+  {
+    id: 30,
+    level: 5,
+    period: "綜合知識",
+    difficulty: "困難",
+    category: "對外交流",
+    text: "比較唐代與清前期對外交流政策，下列何者最符合歷史趨勢？",
+    options: {
+      A: "兩者都以全面海禁為核心",
+      B: "唐代較開放，清前期管制較多",
+      C: "清前期比唐代更鼓勵民間遠洋貿易",
+      D: "唐代完全拒絕外來文化"
     },
     answer: "B"
   }
