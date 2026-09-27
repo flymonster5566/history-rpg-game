@@ -147,8 +147,12 @@ function handleAnswer(answerKey) {
   state.branchScore = updateBranchScore(state.branchScore, answerKey);
 
   if (isCorrect) {
-    state.enemyHp -= enemyDamage;
-    logBattle(`答對！對敵人造成 ${enemyDamage} 點傷害。`, true);
+    if (state.enemyHp > 0) {
+      state.enemyHp = Math.max(0, state.enemyHp - enemyDamage);
+      logBattle(`答對！對敵人造成 ${enemyDamage} 點傷害。`, true);
+    } else {
+      logBattle("敵將已被擊破，此題成績將影響你的最終評價。", true);
+    }
   } else {
     state.playerHp -= playerDamage;
     logBattle(`答錯！你受到 ${playerDamage} 點傷害。`, false);
