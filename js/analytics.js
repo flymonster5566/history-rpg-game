@@ -1,3 +1,15 @@
+import { CATEGORY_STUDY_GUIDES } from "./questions.js";
+
+function buildActionRecommendation(category) {
+  const guide = CATEGORY_STUDY_GUIDES[category] || {
+    events: "該知識點代表事件與關鍵史實",
+    concepts: "相關制度背景與核心概念",
+    compare: "同主題在不同朝代的異同"
+  };
+
+  return `【${category}】建議複習「${guide.events}」；連結「${guide.concepts}」；練習「${guide.compare}」。`;
+}
+
 export function buildKnowledgeStats(answers) {
   const stats = {};
 
@@ -28,7 +40,7 @@ export function buildRecommendations(knowledgeStats) {
 
   return weakAreas.map(([category, value]) => {
     const accuracy = Math.round((value.correct / value.total) * 100);
-    return `【${category}】正確率 ${accuracy}%：建議回顧該主題核心事件、制度背景與時代脈絡。`;
+    return `正確率 ${accuracy}%：${buildActionRecommendation(category)}`;
   });
 }
 
