@@ -7,7 +7,7 @@ function buildActionRecommendation(category) {
     compare: "同主題在不同朝代的異同"
   };
 
-  return `建議複習「${guide.events}」；連結「${guide.concepts}」；練習「${guide.compare}」。`;
+  return `【${category}】建議複習「${guide.events}」；連結「${guide.concepts}」；練習「${guide.compare}」。`;
 }
 
 export function buildKnowledgeStats(answers) {
@@ -40,7 +40,7 @@ export function buildRecommendations(knowledgeStats) {
 
   return weakAreas.map(([category, value]) => {
     const accuracy = Math.round((value.correct / value.total) * 100);
-    return `【${category}】正確率 ${accuracy}%：${buildActionRecommendation(category)}`;
+    return `正確率 ${accuracy}%：${buildActionRecommendation(category)}`;
   });
 }
 
