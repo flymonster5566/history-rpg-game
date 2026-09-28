@@ -10,7 +10,8 @@ export function exportPdfReport(report) {
   const recommendations = Array.isArray(report?.recommendations) ? report.recommendations : [];
   const total = report?.total ?? 0;
   const correct = report?.correct ?? 0;
-  const accuracy = Math.round((report?.accuracy || 0) * 100);
+  const computedAccuracy = total > 0 ? correct / total : 0;
+  const accuracy = Math.round(((report?.accuracy ?? computedAccuracy) || 0) * 100);
   const container = document.createElement("section");
   container.style.width = "700px";
   container.style.padding = "12px";
