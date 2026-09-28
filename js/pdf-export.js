@@ -11,7 +11,9 @@ export function exportPdfReport(report) {
   const total = report?.total ?? 0;
   const correct = report?.correct ?? 0;
   const computedAccuracy = total > 0 ? correct / total : 0;
-  const accuracy = Math.round(((report?.accuracy ?? computedAccuracy) || 0) * 100);
+  const rawAccuracy = typeof report?.accuracy === "number" ? report.accuracy : null;
+  const normalizedAccuracy = rawAccuracy == null ? computedAccuracy : rawAccuracy > 1 ? rawAccuracy / 100 : rawAccuracy;
+  const accuracy = Math.round((normalizedAccuracy || 0) * 100);
   const container = document.createElement("section");
   container.style.width = "700px";
   container.style.padding = "12px";
