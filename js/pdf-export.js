@@ -41,8 +41,10 @@ export function exportPdfReport(report) {
     knowledgeList.appendChild(li);
   } else {
     Object.entries(knowledgeStats).forEach(([category, value]) => {
+      const correctCount = value?.correct ?? 0;
+      const wrongCount = value?.wrong ?? 0;
       const li = document.createElement("li");
-      li.textContent = `${category}：答對 ${value.correct} 題，答錯 ${value.wrong} 題`;
+      li.textContent = `${category}：答對 ${correctCount} 題，答錯 ${wrongCount} 題`;
       knowledgeList.appendChild(li);
     });
   }
