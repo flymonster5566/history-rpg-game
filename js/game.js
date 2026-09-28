@@ -2,6 +2,7 @@ import { QUESTIONS, LEVEL_ENEMIES } from "./questions.js";
 import { getLevelOpening, getStoryAfterAnswer, updateBranchScore, decideEnding } from "./story.js";
 import { buildKnowledgeStats, buildRecommendations, summarizeResult } from "./analytics.js";
 import { exportPdfReport } from "./pdf-export.js";
+import { GAME_VERSION } from "./config.js";
 
 const STORAGE_KEY = "historyRpgProgressV1";
 const HISTORY_KEY = "historyRpgReportsV1";
@@ -35,7 +36,8 @@ const elements = {
   wrongList: document.getElementById("wrong-list"),
   recommendations: document.getElementById("recommendations"),
   exportPdf: document.getElementById("export-pdf"),
-  backResult: document.getElementById("back-result")
+  backResult: document.getElementById("back-result"),
+  gameVersion: document.getElementById("game-version")
 };
 
 let state = createInitialState();
@@ -338,6 +340,7 @@ function bindEvents() {
 
 function init() {
   bindEvents();
+  elements.gameVersion.textContent = `遊戲版本 ${GAME_VERSION}`;
   updateIntroState();
   showPanel("intro");
 }
