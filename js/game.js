@@ -6,6 +6,13 @@ import { GAME_VERSION } from "./config.js";
 
 const STORAGE_KEY = "historyRpgProgressV1";
 const HISTORY_KEY = "historyRpgReportsV1";
+const QUESTIONS_PER_RUN = 15;
+const QUESTIONS_PER_LEVEL = QUESTIONS_PER_RUN / LEVEL_ENEMIES.length;
+const QUESTION_MAP = new Map(QUESTIONS.map((item) => [item.id, item]));
+const QUESTIONS_BY_LEVEL = LEVEL_ENEMIES.reduce((acc, enemy) => {
+  acc[enemy.level] = QUESTIONS.filter((question) => question.level === enemy.level);
+  return acc;
+}, {});
 
 const elements = {
   intro: document.getElementById("intro"),
@@ -45,6 +52,7 @@ let latestReport = null;
 
 function createInitialState() {
   return {
+    questionSet: [],
     currentQuestionIndex: 0,
     playerHp: 120,
     enemyHp: LEVEL_ENEMIES[0].maxHp,
@@ -58,6 +66,70 @@ function createInitialState() {
       cautious: 0
     }
   };
+}
+
+function shuffle(items) {
+  const list = [...items];
+  for (let i = list.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [list[i], list[j]] = [list[j], list[i]];
+  }
+  return list;
+}
+
+function buildDeterministicFallbackSet() {
+  const basePerLevel = Math.floor(QUESTIONS_PER_RUN / LEVEL_ENEMIES.length);
+  const selected = [];
+  const selectedIds = new Set();
+
+  LEVEL_ENEMIES.forEach((enemy) => {
+    const candidates = [...(QUESTIONS_BY_LEVEL[enemy.level] || [])].sort((a, b) => a.id - b.id);
+    candidates.slice(0, basePerLevel).forEach((question) => {
+      selected.push(question);
+      selectedIds.add(question.id);
+    });
+  });
+
+  if (selected.length < QUESTIONS_PER_RUN) {
+    [...QUESTIONS]
+      .sort((a, b) => a.level - b.level || a.id - b.id)
+      .forEach((question) => {
+        if (selected.length >= QUESTIONS_PER_RUN || selectedIds.has(question.id)) {
+          return;
+        }
+        selected.push(question);
+        selectedIds.add(question.id);
+      });
+  }
+
+  return selected
+    .slice(0, QUESTIONS_PER_RUN)
+    .sort((a, b) => a.level - b.level || a.id - b.id);
+}
+
+function generateQuestionSet() {
+  if (!Number.isInteger(QUESTIONS_PER_LEVEL)) {
+    console.warn(`題庫設定不整除：${QUESTIONS_PER_RUN} 題無法平均分配到 ${LEVEL_ENEMIES.length} 關，已改用固定題序。`);
+    return buildDeterministicFallbackSet();
+  }
+
+  const missingLevel = LEVEL_ENEMIES.find((enemy) => (QUESTIONS_BY_LEVEL[enemy.level] || []).length < QUESTIONS_PER_LEVEL);
+  if (missingLevel) {
+    console.warn(`題庫設定不足：第 ${missingLevel.level} 關少於 ${QUESTIONS_PER_LEVEL} 題，已改用固定題序補齊。`);
+    return buildDeterministicFallbackSet();
+  }
+  // 維持原本章節推進節奏：依關卡順序抽題，每關隨機 3 題。
+  return LEVEL_ENEMIES.flatMap((enemy) => shuffle(QUESTIONS_BY_LEVEL[enemy.level]).slice(0, QUESTIONS_PER_LEVEL));
+}
+
+function getCurrentQuestions() {
+  if (Array.isArray(state.questionSet)) {
+    const mapped = state.questionSet.map((id) => QUESTION_MAP.get(id)).filter(Boolean);
+    if (mapped.length === QUESTIONS_PER_RUN) {
+      return mapped;
+    }
+  }
+  return buildDeterministicFallbackSet();
 }
 
 function getEnemyByLevel(level) {
@@ -85,15 +157,17 @@ function logBattle(text, isGood = true) {
 }
 
 function renderStatus() {
+  const currentQuestions = getCurrentQuestions();
   const enemy = getEnemyByLevel(state.currentLevel);
   elements.playerHp.textContent = `${Math.max(state.playerHp, 0)} / 120`;
   elements.enemyName.textContent = `第 ${state.currentLevel} 關・${enemy.name}`;
   elements.enemyHp.textContent = `${Math.max(state.enemyHp, 0)} / ${enemy.maxHp}`;
-  elements.progress.textContent = `${state.currentQuestionIndex + 1} / ${QUESTIONS.length}`;
+  elements.progress.textContent = `${Math.min(state.currentQuestionIndex + 1, currentQuestions.length)} / ${currentQuestions.length}`;
 }
 
 function renderQuestion() {
-  const question = QUESTIONS[state.currentQuestionIndex];
+  const currentQuestions = getCurrentQuestions();
+  const question = currentQuestions[state.currentQuestionIndex];
   if (!question) {
     finishGame();
     return;
@@ -132,7 +206,8 @@ function pushReport(report) {
 }
 
 function handleAnswer(answerKey) {
-  const question = QUESTIONS[state.currentQuestionIndex];
+  const currentQuestions = getCurrentQuestions();
+  const question = currentQuestions[state.currentQuestionIndex];
   if (!question) {
     return;
   }
@@ -188,7 +263,7 @@ function handleAnswer(answerKey) {
   const currentLevel = question.level;
   state.currentQuestionIndex += 1;
 
-  const nextQuestion = QUESTIONS[state.currentQuestionIndex];
+  const nextQuestion = currentQuestions[state.currentQuestionIndex];
   if (state.enemyHp <= 0 && nextQuestion && nextQuestion.level === currentLevel) {
     state.enemyHp = 0;
   } else if (nextQuestion && nextQuestion.level !== currentLevel) {
@@ -207,7 +282,10 @@ function handleAnswer(answerKey) {
 function buildFinalReport() {
   const summary = summarizeResult({ answers: state.answers, wrongQuestions: state.wrongQuestions });
   const knowledgeStats = buildKnowledgeStats(state.answers);
-  const recommendations = buildRecommendations(knowledgeStats);
+  const recommendations = buildRecommendations({
+    knowledgeStats,
+    wrongQuestions: state.wrongQuestions
+  });
   const ending = decideEnding({
     accuracy: summary.accuracy,
     playerHp: state.playerHp,
@@ -283,6 +361,7 @@ function renderAnalysis(report) {
 
 function startNewGame() {
   state = createInitialState();
+  state.questionSet = generateQuestionSet().map((item) => item.id);
   elements.battleLog.innerHTML = "";
   elements.storyText.textContent = getLevelOpening(1);
   saveProgress();
@@ -309,7 +388,10 @@ function resumeGame() {
     };
 
     elements.battleLog.innerHTML = "";
-    const currentLevel = QUESTIONS[state.currentQuestionIndex]?.level || state.currentLevel || 1;
+    if (!Array.isArray(state.questionSet) || state.questionSet.length !== QUESTIONS_PER_RUN) {
+      state.questionSet = generateQuestionSet().map((item) => item.id);
+    }
+    const currentLevel = getCurrentQuestions()[state.currentQuestionIndex]?.level || state.currentLevel || 1;
     state.currentLevel = currentLevel;
     elements.storyText.textContent = getLevelOpening(currentLevel);
     renderQuestion();
